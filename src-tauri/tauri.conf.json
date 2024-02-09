@@ -7,7 +7,7 @@
   },
   "package": {
     "productName": "excel-tool",
-    "version": "0.0.0"
+    "version": "0.0.1"
   },
   "tauri": {
     "allowlist": {
@@ -15,7 +15,17 @@
       "shell": {
         "all": false,
         "open": true
-      }
+      },
+        "fs": {
+        "all": true,
+        "scope": [
+          "$DOCUMENT/**", "$DOCUMENT/*", "$DOCUMENT",
+          "$DOWNLOAD/**", "$DOWNLOAD/*", "$DOWNLOAD"
+        ]
+      },
+      "dialog": {
+        "all": true
+    }
     },
     "windows": [
       {
