@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import * as XLSX from 'xlsx';
-import { writeBinaryFile, BaseDirectory } from '@tauri-apps/api/fs';
+import { createDir, writeBinaryFile, BaseDirectory } from '@tauri-apps/api/fs';
 import { message } from '@tauri-apps/api/dialog';
 import { chain } from 'lodash';
 
@@ -20,7 +20,7 @@ export function ExcelToJsonConverter() {
         jsonData = [];
         for (const file of files) {
             const data = await file.arrayBuffer();
-            const workbook = XLSX.read(data, { type: "buffer" });
+            const workbook = XLSX.read(data, { type: "buffer", cellDates: true });
             for (const sheetName of workbook.SheetNames) {
                 const worksheet = workbook.Sheets[sheetName];
                 const json = XLSX.utils.sheet_to_json(worksheet);
@@ -48,18 +48,23 @@ export function ExcelToJsonConverter() {
         }
     }
 
-    async function downloadExcel(filename: string) {
+    async function downloadExcel(filename: string, sheetName: string = "Sheet1") {
         /* generate worksheet and workbook */
         const worksheet = XLSX.utils.json_to_sheet(jsonData);
         const workbook = XLSX.utils.book_new();
-        XLSX.utils.book_append_sheet(workbook, worksheet, "Merged");
+        XLSX.utils.book_append_sheet(workbook, worksheet, sheetName);
 
         /* create an XLSX file and try to save to Presidents.xlsx */
         const u8 = XLSX.write(workbook, { type: "array", bookType: "xlsx" });
 
         console.log(u8);
         console.log(jsonData);
-        await writeBinaryFile(filename + '.xlsx', u8, { dir: BaseDirectory.Download });
+
+        // Create the `$APPDATA/users` directory
+        await createDir('excel-tool', { dir: BaseDirectory.Download, recursive: true });
+
+
+        await writeBinaryFile('excel-tool/' + filename + '.xlsx', u8, { dir: BaseDirectory.Download });
     }
 
     async function handleSplitFile(): Promise<void> {
@@ -77,7 +82,7 @@ export function ExcelToJsonConverter() {
 
                 for (const group of groupBy) {
                     jsonData = group.values;
-                    await downloadExcel(`splited-${group.key}-${uuidv4()}`);
+                    await downloadExcel(group.key, group.key);
                     jsonData = [];
                 }
 
