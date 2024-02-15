@@ -13,19 +13,35 @@ function uuidv4() {
 
 export function ExcelToJsonConverter() {
     let jsonData = [] as any[];
-    let firstColumnName = "";
+    let columnNames = [] as any[];
     const [files, setFiles] = useState<FileList | null>(null);
 
     async function convertExcelToJson(files: FileList, isFirstSheetOnly: boolean = false) {
         jsonData = [];
+        columnNames = [];
         for (const file of files) {
             const data = await file.arrayBuffer();
             const workbook = XLSX.read(data, { type: "buffer", cellDates: true });
             for (const sheetName of workbook.SheetNames) {
                 const worksheet = workbook.Sheets[sheetName];
-                const json = XLSX.utils.sheet_to_json(worksheet);
-                firstColumnName = worksheet.A1.v;
-                console.log("firstColumnName:::", firstColumnName);
+                const json = XLSX.utils.sheet_to_json(worksheet, { header: 1, range: 1 });
+
+                // Define the range (in this case, the first row)
+                const range = XLSX.utils.decode_range(worksheet['!ref'] ?? "");
+                range.s.r = 0; // set start row to 0
+                range.e.r = 0; // set end row to 0
+
+                // Iterate over each cell in the first row
+                for (let C = range.s.c; C <= range.e.c; ++C) {
+                    const cellAddress = { r: range.s.r, c: C };
+                    const cellRef = XLSX.utils.encode_cell(cellAddress);
+                    const cellValue = worksheet[cellRef] ? worksheet[cellRef].v : undefined;
+
+                    // Push the cell value to the array
+                    columnNames.push(cellValue);
+                }
+
+                console.log("columnNames:::", columnNames);
                 jsonData.push(...json);
 
                 if (isFirstSheetOnly) {
@@ -50,7 +66,27 @@ export function ExcelToJsonConverter() {
 
     async function downloadExcel(filename: string, sheetName: string = "Sheet1") {
         /* generate worksheet and workbook */
-        const worksheet = XLSX.utils.json_to_sheet(jsonData);
+        let aoa = [];
+
+        let row = [];
+
+        for (const key in columnNames) {
+            row.push(columnNames[key]);
+        }
+
+        aoa.push(row);
+
+        for (const data of jsonData) {
+            row = [];
+
+            for (const key in data) {
+                row.push(data[key]);
+            }
+
+            aoa.push(row);
+        }
+
+        const worksheet = XLSX.utils.aoa_to_sheet(aoa);
         const workbook = XLSX.utils.book_new();
         XLSX.utils.book_append_sheet(workbook, worksheet, sheetName);
 
@@ -76,7 +112,7 @@ export function ExcelToJsonConverter() {
 
             if (jsonData.length > 0) {
                 var groupBy = chain(jsonData)
-                    .groupBy(firstColumnName)
+                    .groupBy(0)
                     .map((value, key) => ({ key: key, values: value }))
                     .value();
 
