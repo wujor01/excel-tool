@@ -24,7 +24,7 @@ export function ExcelToJsonConverter() {
             const workbook = XLSX.read(data, { type: "buffer", cellDates: true });
             for (const sheetName of workbook.SheetNames) {
                 const worksheet = workbook.Sheets[sheetName];
-                const json = XLSX.utils.sheet_to_json(worksheet, { header: 1, range: 1 });
+                const json = XLSX.utils.sheet_to_json(worksheet, { header: 1, range: 1, defval: null });
 
                 // Define the range (in this case, the first row)
                 const range = XLSX.utils.decode_range(worksheet['!ref'] ?? "");
@@ -91,7 +91,7 @@ export function ExcelToJsonConverter() {
         XLSX.utils.book_append_sheet(workbook, worksheet, sheetName);
 
         /* create an XLSX file and try to save to Presidents.xlsx */
-        const u8 = XLSX.write(workbook, { type: "array", bookType: "xlsx" });
+        const u8 = XLSX.write(workbook, { type: "array", bookType: "xls" });
 
         console.log(u8);
         console.log(jsonData);
@@ -100,7 +100,7 @@ export function ExcelToJsonConverter() {
         await createDir('excel-tool', { dir: BaseDirectory.Download, recursive: true });
 
 
-        await writeBinaryFile('excel-tool/' + filename + '.xlsx', u8, { dir: BaseDirectory.Download });
+        await writeBinaryFile('excel-tool/' + filename + '.xls', u8, { dir: BaseDirectory.Download });
     }
 
     async function handleSplitFile(): Promise<void> {
@@ -128,6 +128,7 @@ export function ExcelToJsonConverter() {
 
         } catch (error: any) {
             await message(error.message, { title: "Error", type: "error" });
+            console.error(error);
         }
     }
 
