@@ -57,14 +57,14 @@ export function ExcelToJsonConverter() {
                 return;
 
             await convertExcelToJson(files);
-            await downloadExcel(`merged-${uuidv4()}`);
+            await downloadExcel(`merged-${uuidv4()}`, undefined, 'xlsx');
             await message(`Merged files success: merged-${uuidv4()}.xlsx`, 'Message');
         } catch (error: any) {
             await message(error.message, { title: "Error", type: "error" });
         }
     }
 
-    async function downloadExcel(filename: string, sheetName: string = "Sheet1") {
+    async function downloadExcel(filename: string, sheetName: string = "Sheet1", bookType: XLSX.BookType = "xls") {
         /* generate worksheet and workbook */
         let aoa = [];
 
@@ -91,16 +91,13 @@ export function ExcelToJsonConverter() {
         XLSX.utils.book_append_sheet(workbook, worksheet, sheetName);
 
         /* create an XLSX file and try to save to Presidents.xlsx */
-        const u8 = XLSX.write(workbook, { type: "array", bookType: "xls" });
-
-        console.log(u8);
-        console.log(jsonData);
+        const u8 = XLSX.write(workbook, { type: "array", bookType: bookType });
 
         // Create the `$APPDATA/users` directory
         await createDir('excel-tool', { dir: BaseDirectory.Download, recursive: true });
 
 
-        await writeBinaryFile('excel-tool/' + filename + '.xls', u8, { dir: BaseDirectory.Download });
+        await writeBinaryFile('excel-tool/' + filename + "." + bookType, u8, { dir: BaseDirectory.Download });
     }
 
     async function handleSplitFile(): Promise<void> {
